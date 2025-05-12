@@ -86,10 +86,6 @@ Site   : https://hashamx.com
                 if location:
                     writer.writerow([location[header] for header in self.headers])
 
-if __name__ == "__main__":
-    scraper = GoogleMapsScraper("https://www.google.com/maps/search/Hotels+near+Ile-de-France/@48.6715055,1.7096918,9z/data=!3m1!4b1?entry=ttu&g_ep=EgoyMDI1MDUwNy4wIKXMDSoASAFQAw%3D%3D")
-    scraper.scrape()
-
 
 
 
