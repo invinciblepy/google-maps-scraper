@@ -3,7 +3,7 @@ import re
 import requests
 import csv
 import os
-
+from lxml import html
 
 
 class GoogleMapsScraper:
@@ -48,12 +48,14 @@ Site   : https://hashamx.com
 
     def scrape(self):
         response = self.session.get(self.url)
+        if "consent.google.com" in response.url:
+            response = self.consent_page(response)
         pattern = r'window\.APP_INITIALIZATION_STATE\s*=\s*\[(.*?)\];'
         match = re.search(pattern, response.text)
         if not match:
-            print("No Items found")
+            print("[X] No Items found")
             return
-            
+
         state_str = match.group(1)
         state = json.loads(f"[{state_str}]")
         events_arr = state[3][2].replace(")]}'\n", "")
@@ -65,7 +67,18 @@ Site   : https://hashamx.com
             for event in all_events[64]
         ]
         self.write_to_csv(self.locations)
-        
+
+    def consent_page(self, response):
+        print("[+] Consent Page")
+        tree = html.fromstring(response.text)
+        form = tree.xpath("//form")[0]
+        action = form.get("action")
+        method = form.get("method")
+        inputs = form.xpath(".//input")
+        data = {input.get("name"): input.get("value") for input in inputs}
+        response = self.session.post(action, data=data)
+        return response
+
     def fetch_event_data(self, event):
         return {
             "name": event[11],
@@ -77,7 +90,7 @@ Site   : https://hashamx.com
             "phone": event[178][0][0] if isinstance(event[178], list) else None,
             "url": event[7][0] if isinstance(event[7], list) else None
         }
-    
+
     def write_to_csv(self, locations):
         with open(self.output_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
